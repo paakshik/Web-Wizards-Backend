@@ -1,0 +1,29 @@
+# ===============================
+# Core Framework
+# ===============================
+fastapi>=0.110.0
+starlette>=0.36.0
+uvicorn[standard]>=0.23.0
+python-multipart>=0.0.6
+
+
+
+# ===============================
+# Third-Party Integrations
+# ===============================
+todoist-api-python>=2.1.0
+requests>=2.31.0
+
+# ===============================
+# Utilities
+# ===============================
+python-dotenv==1.2.1
+pydantic>=2.5.
+pydantic-settings>=2.1.0
+
+# ===============================
+# HTTP Client (FIXED)
+# ===============================
+httpx>=0.27.0
+logging
+sentry-sdk
