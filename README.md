@@ -1,336 +1,269 @@
-# 🎓 Student Portal API
+# 📋 Nexus Complaint Portal — Backend API
 
-A **FastAPI** backend for a college student management system — handling student/admin authentication, complaint tracking, and profile management. Built with clean architecture, JSON-based file storage, and production-grade logging via Sentry.
-
----
-
-## 📁 Project Structure
-
-```
-project/
-├── app/
-│   ├── config.py          # Environment config, logging setup, file path constants
-│   ├── dependencies.py    # Shared JSON read/write helpers (used across all routers)
-│   ├── main.py            # FastAPI app factory — middleware + router registration
-│   ├── model.py           # Pydantic request/response models
-│   ├── auth.py            # Student & Admin signup/login endpoints
-│   ├── students.py        # Student profile management (WIP)
-│   ├── complaints.py      # Complaint submission & tracking (WIP)
-│   └── admin.py           # Admin management endpoints (WIP)
-├── user_data/             # Auto-created at runtime (gitignored)
-│   ├── students.json      # Student records
-│   ├── admin.json         # Admin records
-│   └── complaint.json     # Complaint records
-├── logs/
-│   └── app.log            # Rotating application log
-├── requirements.txt
-├── run.py                 # Dev server launcher (CLI args support)
-└── .env                   # Environment variables (never commit this!)
-```
+> A role-based complaint management system for college students and administrators, built with **FastAPI** and secured with **JWT authentication**.
 
 ---
 
-## ⚙️ Tech Stack
+## 🧭 What Is This?
 
-| Layer | Technology |
-|---|---|
-| Framework | FastAPI |
-| Server | Uvicorn |
-| Validation | Pydantic v2 |
-| Password Hashing | Passlib (bcrypt) |
-| Storage | JSON flat files |
-| Logging | Python `logging` + File rotation |
-| Monitoring | Sentry SDK |
-| Config | python-dotenv |
+The Nexus Complaint Portal is a REST API backend that lets students raise formal complaints to their college departments, and lets admins track, update, and close those complaints — all with proper role-based access control.
+
+Think of it like a **digital suggestion/complaint box**, but smarter:
+- Students can only see their own complaints
+- Admins can only see complaints from their department
+- Nobody can touch what they're not supposed to
+
+---
+
+## ✨ Feature Overview
+
+| Feature | Student | Admin |
+|---|---|---|
+| Sign up & log in | ✅ | ✅ |
+| Upload profile avatar | ✅ | ✅ |
+| Raise a complaint with document | ✅ | ❌ |
+| View own complaints | ✅ | ❌ |
+| View department complaints | ❌ | ✅ |
+| Update complaint status | ❌ | ✅ |
+| Close complaint with resolution doc | ❌ | ✅ |
+| View complaint stats dashboard | ✅ (own) | ✅ (by dept) |
+
+---
+
+## 🗂️ Project Structure
+
+```
+app/
+├── api/
+│   ├── auth.py          # Signup, login, JWT token creation
+│   ├── complaints.py    # Raise, track, update, close complaints
+│   ├── students.py      # Student profile endpoint
+│   └── admin.py         # Admin profile endpoint
+├── config.py            # Env vars, logging, Sentry setup
+├── dependencies.py      # JSON file read/write helpers
+├── model.py             # Pydantic request models
+└── main.py              # App factory, router registration, middleware
+```
+
+---
+
+## 🔄 How It All Flows
+
+```
+Client Request
+     │
+     ▼
+ FastAPI App  (main.py)
+     │
+     ├──► /auth/*        ─► Signup / Login → returns JWT Token
+     │
+     ├──► /complaints/*  ─► Bearer Token required
+     │         │
+     │         ├── role == "student"  → can raise & view own complaints
+     │         └── role == "admin"    → can manage & close complaints
+     │
+     ├──► /student/me    ─► Returns profile (student token only)
+     └──► /admin/me      ─► Returns profile (admin token only)
+```
+
+---
+
+## 🔐 Authentication Design
+
+This API uses **JWT (JSON Web Tokens)** for stateless authentication.
+
+When you log in, the server returns a token like:
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+This token is **self-contained** — it holds your `username` and `role` inside it. Every protected endpoint decodes this token to know who you are and what you're allowed to do. No database lookup needed to check identity.
+
+```
+Login Request  →  Server checks credentials
+                       │
+                       ▼
+               Creates token with:
+               { "sub": "john_doe", "role": "student", "exp": ... }
+                       │
+                       ▼
+               You send this token in every future request
+               Authorization: Bearer <token>
+```
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Clone & Set Up Virtual Environment
+### Prerequisites
 
-```powershell
-# [TERMINAL] - Create and activate a virtual environment
-python -m venv venv
-.\venv\Scripts\Activate
-```
+- Python 3.10+
+- pip
 
-### 2. Install Dependencies
+### 1. Clone & Install
 
 ```powershell
 # [TERMINAL]
+git clone <your-repo-url>
+cd nexus-backend
+
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
+### 2. Set Up Environment Variables
 
 Create a `.env` file in the project root:
 
 ```env
-# .env
-SENTRY_DSN=your_sentry_dsn_here       # Optional: remove line if not using Sentry
+SECRET_KEY=your-super-secret-key-here
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+
+# Optional
+SENTRY_DSN=your-sentry-dsn
 ENVIRONMENT=development
-DATA_DIR=user_data                     # Where JSON data files are stored
+DATA_DIR=user_data
 ```
 
-> **Note:** `SENTRY_DSN` is optional. The app starts fine without it.
+> ⚠️ **Never commit your `.env` file to GitHub.** Add it to `.gitignore`.
 
-### 4. Run the Development Server
+### 3. Run the Server
 
 ```powershell
-# [TERMINAL] - Default: http://127.0.0.1:8000
-python run.py
-
-# Custom port
-python run.py --port 8001
-
-# Expose to local network (e.g., for mobile testing)
-python run.py --host 0.0.0.0
-
-# Disable hot-reload (use in production)
-python run.py --no-reload
+# [TERMINAL]
+uvicorn app.main:app --reload
 ```
+
+The API will be live at: `http://127.0.0.1:8000`
 
 ---
 
-## 📡 API Reference
+## 📡 API Endpoints
 
-### Base URL
-```
-http://127.0.0.1:8000
-```
+### 🔑 Authentication  `prefix: /auth`
 
-### 🔐 Authentication — `/auth`
-
-#### Register a Student
-```http
-POST /auth/signup/student
-Content-Type: application/json
-
-{
-  "username": "john_doe",
-  "college_email": "john@nitsilchar.ac.in",
-  "password": "securepassword123",
-  "sch_id": "2401001"
-}
-```
-
-**Response (201 Created):**
-```json
-{
-  "message": "User created successfully",
-  "username": "john_doe"
-}
-```
-
----
-
-#### Register an Admin
-```http
-POST /auth/signup/admin
-Content-Type: application/json
-
-{
-  "username": "admin_user",
-  "password": "adminpass"
-}
-```
-
----
-
-#### Student Login
-```http
-POST /auth/login/user
-Content-Type: application/json
-
-{
-  "username": "john_doe",
-  "password": "securepassword123"
-}
-```
-
-**Response (200 OK):**
-```json
-{
-  "message": "User login successful",
-  "role": "student",
-  "token": "dummy-user-token"
-}
-```
-
----
-
-#### Admin Login
-```http
-POST /auth/login/admin
-Content-Type: application/json
-
-{
-  "username": "admin_user",
-  "password": "adminpass"
-}
-```
-
----
-
-### 🩺 Health Check
-
-```http
-GET /health
-```
-
-**Response:**
-```json
-{
-  "status": "active",
-  "timestamp": "2025-01-01T10:00:00+00:00",
-  "version": "2.0.0"
-}
-```
-
----
-
-### 📖 Interactive API Docs
-
-Once the server is running, visit:
-
-| Interface | URL |
-|---|---|
-| Swagger UI | http://127.0.0.1:8000/docs |
-| ReDoc | http://127.0.0.1:8000/redoc |
-
----
-
-## 🗃️ Data Storage
-
-This project uses **JSON flat files** instead of a database — perfect for prototyping and college projects.
-
-The `user_data/` directory is **auto-created** on first run using a "lazy initialization" pattern:
-
-```python
-# From dependencies.py — files are only created when first accessed
-if not path_obj.exists():
-    if path_obj in [STUDENTS_FILE, ADMIN_FILE, COMPLAINT_FILE]:
-        # Creates the file with an empty list []
-        write_default_file(path_obj)
-```
-
-### Student Record Shape
-```json
-{
-  "username": "john_doe",
-  "college_email": "john@nitsilchar.ac.in",
-  "sch_id": "2401001",
-  "password": "$2b$12$...",
-  "profile_pic": "uploads/default.jpg"
-}
-```
-
-> **⚠️ Passwords are hashed** using `bcrypt` on student signup. Admin passwords are currently stored in plaintext — this is a known issue to fix (see Roadmap).
-
----
-
-## 🔧 Configuration Reference
-
-All configuration lives in `config.py`. Key constants:
-
-| Constant | Description |
-|---|---|
-| `DATA_DIR` | Root directory for all JSON data files (env: `DATA_DIR`) |
-| `STUDENTS_FILE` | Path to `students.json` |
-| `ADMIN_FILE` | Path to `admin.json` |
-| `COMPLAINT_FILE` | Path to `complaint.json` |
-| `SENTRY_DSN` | Sentry error tracking DSN (optional) |
-
-### Logging
-
-Logs are written to both the console and `logs/app.log`. The logger is named `"Personal Dashboard"` and can be imported anywhere:
-
-```python
-from app.config import logger
-
-logger.info("Something happened")
-logger.error("Something went wrong", exc_info=True)
-```
-
----
-
-## 🏗️ Architecture Notes
-
-### App Factory Pattern (`main.py`)
-
-The FastAPI app is created inside a `create_app()` factory function. This is a standard pattern that makes it easier to create multiple app instances (e.g., for testing).
-
-```python
-# main.py
-def create_app() -> FastAPI:
-    app = FastAPI(...)
-    app.add_middleware(CORSMiddleware, ...)
-    app.include_router(auth_router)
-    return app
-
-app = create_app()   # ← Uvicorn targets this instance
-```
-
-### Shared Helpers (`dependencies.py`)
-
-All file I/O is centralized in two functions:
-
-- `read_json_file(path)` — Reads a JSON file; auto-creates it with `[]` if it's a known data file.
-- `write_json_file(path, data)` — Serializes and writes data; returns `True/False` for error handling.
-
-This means **no router ever touches the filesystem directly** — they all go through these helpers.
-
----
-
-## 🛣️ Roadmap
-
-- [ ] Hash admin passwords on signup (same as student flow)
-- [ ] Replace dummy tokens with real JWT authentication
-- [ ] Implement `students.py` — profile view & update endpoints
-- [ ] Implement `complaints.py` — submit, list, resolve complaints
-- [ ] Implement `admin.py` — admin dashboard endpoints
-- [ ] Migrate from JSON flat files to SQLite or PostgreSQL
-- [ ] Add input validation (e.g., password strength, SCH ID format)
-- [ ] Write unit tests with `pytest`
-
----
-
-## 🐛 Known Issues
-
-| Issue | Location | Severity |
+| Method | Endpoint | Description |
 |---|---|---|
-| Admin passwords stored as plaintext | `auth.py → signup_admin` | 🔴 High |
-| Tokens are hardcoded dummy strings | `auth.py → login_*` | 🔴 High |
-| No rate limiting on login endpoints | `auth.py` | 🟡 Medium |
-| `complaints.py` and `students.py` are empty | — | 🟡 Medium |
+| `POST` | `/auth/signup/student` | Register a new student (multipart form + avatar) |
+| `POST` | `/auth/signup/admin` | Register a new admin (multipart form + avatar) |
+| `POST` | `/auth/login/student` | Login and receive JWT token |
+| `POST` | `/auth/login/admin` | Login and receive JWT token |
+
+### 📝 Complaints  `prefix: /complaints`
+
+| Method | Endpoint | Who | Description |
+|---|---|---|---|
+| `POST` | `/complaints/complaint/raise` | Student | Raise a new complaint with a document |
+| `GET` | `/complaints/student/my-complaints` | Student | List your own complaints |
+| `GET` | `/complaints/admin/my-complaints?department=X` | Admin | List complaints by department |
+| `GET` | `/complaints/complaint/admin/stats?department=X` | Admin | Stats dashboard |
+| `GET` | `/complaints/complaint/student/stats` | Student | Stats dashboard |
+| `PATCH` | `/complaints/complaint/{id}/status` | Admin | Update status (open/in_progress/resolved) |
+| `POST` | `/complaints/complaint/{id}/close` | Admin | Close with a resolution document |
+
+### 👤 Profiles
+
+| Method | Endpoint | Who | Description |
+|---|---|---|---|
+| `GET` | `/student/student/me` | Student | Get your own profile |
+| `GET` | `/admin/admin/me` | Admin | Get your own profile |
 
 ---
 
-## 📦 Requirements
+## 📦 Data Models
 
+### Student Signup (Form Data)
 ```
-fastapi>=0.110.0
-uvicorn[standard]>=0.23.0
-pydantic>=2.5.0
-pydantic-settings>=2.1.0
-python-dotenv==1.2.1
-passlib[bcrypt]
-httpx>=0.27.0
-sentry-sdk
-requests>=2.31.0
-python-multipart>=0.0.6
+username, college_email, password, sch_id, avatar (file)
 ```
 
-> **Note:** `logging` is part of Python's standard library — remove it from `requirements.txt` to avoid install warnings.
+### Complaint (JSON Body)
+```json
+{
+  "student_username": "john_doe",
+  "title": "No water in hostel",
+  "description": "The water supply has been cut for 3 days...",
+  "department": "Hostel",
+  "phone_number": "9876543210"
+}
+```
+
+### Complaint Status Flow
+```
+open  →  in_progress  →  resolved  →  [admin closes]  →  closed
+```
 
 ---
 
-## 👤 Author
+## 🗄️ Storage
 
-**1st Year ECE Student, NIT Silchar**
-Building full-stack projects to learn React + FastAPI alongside engineering coursework.
+This project uses **flat JSON files** as a database — a great choice for prototyping and college projects.
+
+| File | Stores |
+|---|---|
+| `user_data/students.json` | All registered students |
+| `user_data/admin.json` | All registered admins |
+| `user_data/complaint.json` | All complaints |
+| `user_data/uploads/` | Profile avatars |
+| `user_data/resolutions/` | Complaint & resolution documents |
+
+> 💡 Files are **lazily initialized** — they get created automatically the first time they're needed. No manual setup required.
 
 ---
 
-*Built with FastAPI • Documented with ❤️*
+## 🔍 Interactive API Docs
+
+FastAPI ships with built-in documentation. Once the server is running, open:
+
+- **Swagger UI** → [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) — Try endpoints directly in the browser
+- **ReDoc** → [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc) — Clean reference documentation
+
+---
+
+## 🛡️ Security Notes
+
+- Passwords are hashed using **bcrypt** before storage — plain text passwords are never saved
+- JWT tokens expire after 30 minutes (configurable)
+- Role checks (`student` vs `admin`) are enforced on every protected endpoint
+- The `password` field is stripped from all API responses before returning profile data
+
+---
+
+## 📊 Monitoring
+
+This project integrates with **Sentry** for error tracking and performance monitoring in production.
+
+- Failed login attempts are captured as warnings
+- Unhandled exceptions are automatically reported
+- All significant events are logged locally to `logs/app.log`
+
+To enable Sentry, add `SENTRY_DSN` to your `.env` file.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | FastAPI |
+| Auth | JWT (PyJWT) + bcrypt |
+| Validation | Pydantic v2 |
+| Monitoring | Sentry SDK + Python logging |
+| Storage | JSON flat files |
+| Server | Uvicorn |
+
+---
+
+## 👨‍💻 Built By
+
+**Web Wizards Team** — NIT Silchar  
+*Nexus Dashboard Project — 2025*
+
+---
+
+## 📄 License
+
+This project is for academic use. Feel free to fork and build on top of it.
