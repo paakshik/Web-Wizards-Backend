@@ -1,0 +1,26 @@
+[
+  {
+    "username": "string",
+    "email": "string@gmaiil.coom",
+    "id": "string",
+    "password": "$2b$12$FQrCmKeA/8wS9MFxDLiLxu84v44dgqzuKlRX3k/37LUmLwLpfaESC",
+    "profile_pic": "/uploads/string_avatar.png",
+    "department": "string"
+  },
+  {
+    "username": "string",
+    "email": "string",
+    "id": "string",
+    "password": "$2b$12$eZWAyYDz7tZPaMKBsPv/V..N1Aa63ke.FJfU/5fJjZTz8o6N5U2aa",
+    "profile_pic": "/uploads/string_avatar.py",
+    "department": "string"
+  },
+  {
+    "username": "string",
+    "email": "string@gmail.com",
+    "id": "string",
+    "password": "$2b$12$8bBGlJ15jNeREIovub.8.u1kY/q2nVbyl8JLEiBIvd6LmXaFCLfUm",
+    "profile_pic": "/uploads/string_avatar.py",
+    "department": "string"
+  }
+]

@@ -19,9 +19,9 @@ from datetime import datetime, timezone
 # Import configuration
 from app.config import logger
 
-# # Authentication & User Management
-# from app.api.auth import router as auth_router
-#
+# Authentication & User Management
+from app.api.auth import router as auth_router
+from app.api.complaints import router as complaint_router
 # # Google Integrations
 # from app.api.google_services_calender import router as calendar_router
 # from app.api.google_services_gmail import router as gmail_router
@@ -43,7 +43,7 @@ def create_app() -> FastAPI:
     """
     main_app = FastAPI(
         title="Nexus Personal Dashboard API",
-        description="Backend API for personal productivity dashboard",
+        description="Backend API endpoints for project of Web Wizards",
         version="2.0.0",
         docs_url="/docs",
         redoc_url="/redoc"
@@ -67,15 +67,13 @@ def create_app() -> FastAPI:
     # ========================================================================
 
     # # Core Identity
-    # main_app.include_router(auth_router)
-    # logger.info("Registered: Authentication Routes")
+    main_app.include_router(auth_router)
+    logger.info("Registered: Authentication Routes")
 
-    # # Productivity Services
-    # main_app.include_router(calendar_router)
-    # main_app.include_router(gmail_router)
-    # main_app.include_router(drive_router)
-    # logger.info("Registered: Google Service Routes")
-    #
+    # Complaint Services
+    main_app.include_router(complaint_router)
+    logger.info("Registered: Complaint Routes")
+
     # main_app.include_router(projects_router)
     # main_app.include_router(commands_router)
     # logger.info("Registered: Project & Command Routes")

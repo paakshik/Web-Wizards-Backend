@@ -1,0 +1,12 @@
+[
+  {
+    "id": "338d20ab-6fff-4f56-b833-4a3129787ffb",
+    "student_username": "string",
+    "title": "string",
+    "description": "string",
+    "status": "resolved",
+    "created_at": "2026-04-15",
+    "department": "string",
+    "phone_number": "stringstri"
+  }
+]

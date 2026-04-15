@@ -1,5 +1,5 @@
 import json
-from app.config import (STUDENTS_FILE, ADMIN_FILE,logger,sentry_sdk)
+from app.config import (STUDENTS_FILE, ADMIN_FILE,COMPLAINT_FILE,logger,sentry_sdk)
 from pathlib import Path
 from typing import Any, Union, List, Dict
 def read_json_file(file_path: Union[str, Path]) -> Union[
@@ -11,24 +11,21 @@ def read_json_file(file_path: Union[str, Path]) -> Union[
         file_path: Path to JSON file (string or Path object)
 
     Returns:
-        - List for user/project/command/chat files
-        - Dict for tokens file
+        - List for student/admin/complaint files
         - None for other files if they don't exist
 
     Behavior:
-        - Returns empty list [] for user/project/command/chat files if file doesn't exist
-        - Returns empty dict {} for tokens file if file doesn't exist
+        - Returns empty list [] for student/admin/complaint files if file doesn't exist
         - Returns None for other files if they don't exist
         - Returns default on JSON decode errors
     """
-    """Read JSON file, return default if file doesn't exist or is invalid"""
     path_obj = Path(file_path)
 
     # 1. LAZY INIT: Check if file exists
     if not path_obj.exists():
         default_data = None
 
-        if path_obj in [STUDENTS_FILE,ADMIN_FILE]:
+        if path_obj in [STUDENTS_FILE,ADMIN_FILE,COMPLAINT_FILE]:
             default_data = []
 
         # If it's a known file type, create it physically now
@@ -45,7 +42,7 @@ def read_json_file(file_path: Union[str, Path]) -> Union[
                 return default_data
             except OSError as e:
                 logger.error(f"Failed to lazy create {path_obj}: {e}")
-                return default_data  # Return in-memory empty data as fallback
+                return default_data
 
         return None
 

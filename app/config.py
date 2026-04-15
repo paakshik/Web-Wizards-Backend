@@ -9,10 +9,11 @@ No business logic must exist here.
 """
 
 import os,sys
-from pathlib import Path
+from pathlib import Path as FilePath
 from dotenv import load_dotenv
 import sentry_sdk
 import logging
+
 
 load_dotenv()
 def setup_logging(log_dir_name: str = "logs") -> logging.Logger:
@@ -40,7 +41,7 @@ def setup_logging(log_dir_name: str = "logs") -> logging.Logger:
         OSError: For other filesystem-related errors during directory creation.
 
     """
-    project_root = Path(__file__).resolve().parent.parent
+    project_root = FilePath(__file__).resolve().parent.parent
     log_dir = project_root / log_dir_name
     log_dir.mkdir(exist_ok=True)
     logging.basicConfig(
@@ -113,14 +114,18 @@ def optional_env(key: str, default=None):
     return value
 
 
-APP_DIR = Path(__file__).parent.resolve()
+APP_DIR = FilePath(__file__).parent.resolve()
 BACKEND_DIR = APP_DIR.parent
-DATA_DIR = Path(os.getenv("DATA_DIR","user_data"))
+DATA_DIR = FilePath(os.getenv("DATA_DIR","user_data"))
 DATA_DIR.mkdir(exist_ok=True, parents=True)
-
+SECRET_KEY = require_env("SECRET_KEY")
+ALGORITHM = require_env("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(optional_env("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+AUTHLIB_INSECURE_TRANSPORT = optional_env("AUTHLIB_INSECURE_TRANSPORT", "0")
 
 STUDENTS_FILE = DATA_DIR / "students.json"
 ADMIN_FILE = DATA_DIR / "admin.json"
+COMPLAINT_FILE = DATA_DIR / "complaint.json"
 
 SENTRY_DSN = optional_env("SENTRY_DSN")
 if SENTRY_DSN:
