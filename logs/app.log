@@ -3445,3 +3445,166 @@ when serializing list item 0
 00:27:11 - watchfiles.main - INFO - 1 change detected
 00:27:11 - watchfiles.main - INFO - 1 change detected
 00:27:14 - watchfiles.main - INFO - 1 change detected
+00:31:18 - Personal Dashboard - INFO - Logging system initialized from config
+00:31:18 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:31:18 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:31:18 - Personal Dashboard - INFO - ======================================================================
+00:31:18 - Personal Dashboard - INFO - NEXUS DASHBOARD API v2.0 - STARTING SERVER
+00:31:18 - Personal Dashboard - INFO - ======================================================================
+00:31:18 - Personal Dashboard - INFO - Host:          127.0.0.1
+00:31:18 - Personal Dashboard - INFO - Port:          8000
+00:31:18 - Personal Dashboard - INFO - Hot-reload:    ENABLED
+00:31:18 - Personal Dashboard - INFO - Workers:       1
+00:31:18 - Personal Dashboard - INFO - Log Level:     INFO
+00:31:18 - Personal Dashboard - INFO - ======================================================================
+00:31:19 - Personal Dashboard - INFO - Logging system initialized from config
+00:31:19 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:31:19 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:31:19 - watchfiles.main - INFO - 6 changes detected
+00:31:19 - Personal Dashboard - INFO - Registered: Authentication Routes
+00:31:19 - Personal Dashboard - INFO - Registered: Complaint Routes
+00:31:19 - Personal Dashboard - INFO - ======================================================================
+00:31:19 - Personal Dashboard - INFO - Nexus Dashboard API v2.0 initialized successfully!
+00:31:19 - Personal Dashboard - INFO - ======================================================================
+00:31:20 - watchfiles.main - INFO - 1 change detected
+00:31:30 - watchfiles.main - INFO - 1 change detected
+00:31:32 - watchfiles.main - INFO - 1 change detected
+00:31:39 - watchfiles.main - INFO - 1 change detected
+00:31:41 - watchfiles.main - INFO - 1 change detected
+00:31:50 - watchfiles.main - INFO - 1 change detected
+00:31:58 - watchfiles.main - INFO - 1 change detected
+00:32:00 - watchfiles.main - INFO - 1 change detected
+00:32:11 - watchfiles.main - INFO - 1 change detected
+00:32:14 - watchfiles.main - INFO - 1 change detected
+00:32:16 - watchfiles.main - INFO - 1 change detected
+00:32:25 - watchfiles.main - INFO - 1 change detected
+00:32:28 - watchfiles.main - INFO - 1 change detected
+00:33:02 - watchfiles.main - INFO - 1 change detected
+00:33:18 - watchfiles.main - INFO - 1 change detected
+00:33:20 - watchfiles.main - INFO - 1 change detected
+00:33:26 - watchfiles.main - INFO - 2 changes detected
+00:33:26 - watchfiles.main - INFO - 9 changes detected
+00:33:42 - watchfiles.main - INFO - 1 change detected
+00:33:57 - watchfiles.main - INFO - 1 change detected
+00:34:12 - watchfiles.main - INFO - 1 change detected
+00:34:27 - watchfiles.main - INFO - 1 change detected
+00:34:42 - watchfiles.main - INFO - 1 change detected
+00:34:55 - watchfiles.main - INFO - 1 change detected
+00:35:24 - watchfiles.main - INFO - 4 changes detected
+00:36:13 - watchfiles.main - INFO - 5 changes detected
+00:36:13 - Personal Dashboard - INFO - Logging system initialized from config
+00:36:13 - watchfiles.main - INFO - 1 change detected
+00:36:14 - Personal Dashboard - INFO - Logging system initialized from config
+00:36:14 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:36:14 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:36:14 - watchfiles.main - INFO - 6 changes detected
+00:36:14 - watchfiles.main - INFO - 4 changes detected
+00:36:19 - watchfiles.main - INFO - 1 change detected
+00:37:11 - watchfiles.main - INFO - 4 changes detected
+00:37:12 - Personal Dashboard - INFO - Logging system initialized from config
+00:37:12 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:37:12 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:37:12 - watchfiles.main - INFO - 1 change detected
+00:37:12 - watchfiles.main - INFO - 5 changes detected
+00:37:30 - watchfiles.main - INFO - 4 changes detected
+00:37:31 - Personal Dashboard - INFO - Logging system initialized from config
+00:37:31 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:37:31 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:37:31 - watchfiles.main - INFO - 1 change detected
+00:37:32 - watchfiles.main - INFO - 8 changes detected
+00:37:37 - watchfiles.main - INFO - 1 change detected
+00:37:46 - watchfiles.main - INFO - 4 changes detected
+00:37:47 - Personal Dashboard - INFO - Logging system initialized from config
+00:37:47 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:37:47 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:37:47 - watchfiles.main - INFO - 1 change detected
+00:37:48 - watchfiles.main - INFO - 5 changes detected
+00:37:55 - watchfiles.main - INFO - 1 change detected
+00:38:00 - watchfiles.main - INFO - 4 changes detected
+00:38:01 - Personal Dashboard - INFO - Logging system initialized from config
+00:38:01 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:38:01 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:38:01 - watchfiles.main - INFO - 1 change detected
+00:38:02 - watchfiles.main - INFO - 5 changes detected
+00:38:08 - watchfiles.main - INFO - 4 changes detected
+00:38:09 - Personal Dashboard - INFO - Logging system initialized from config
+00:38:09 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:38:09 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:38:09 - watchfiles.main - INFO - 1 change detected
+00:38:10 - watchfiles.main - INFO - 5 changes detected
+00:38:13 - watchfiles.main - INFO - 4 changes detected
+00:38:14 - Personal Dashboard - INFO - Logging system initialized from config
+00:38:14 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:38:14 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:38:14 - watchfiles.main - INFO - 1 change detected
+00:38:14 - watchfiles.main - INFO - 5 changes detected
+00:38:22 - watchfiles.main - INFO - 1 change detected
+00:38:39 - watchfiles.main - INFO - 1 change detected
+00:38:54 - watchfiles.main - INFO - 1 change detected
+00:38:55 - watchfiles.main - INFO - 1 change detected
+00:39:02 - watchfiles.main - INFO - 1 change detected
+00:39:18 - watchfiles.main - INFO - 1 change detected
+00:39:33 - watchfiles.main - INFO - 1 change detected
+00:39:35 - watchfiles.main - INFO - 1 change detected
+00:39:52 - watchfiles.main - INFO - 4 changes detected
+00:39:53 - Personal Dashboard - INFO - Logging system initialized from config
+00:39:53 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:39:53 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:39:53 - watchfiles.main - INFO - 1 change detected
+00:39:54 - Personal Dashboard - INFO - Registered: Authentication Routes
+00:39:54 - Personal Dashboard - INFO - Registered: Complaint Routes
+00:39:54 - Personal Dashboard - INFO - Registered: Student Routes
+00:39:54 - Personal Dashboard - INFO - Registered: Admin Routes
+00:39:54 - Personal Dashboard - INFO - ======================================================================
+00:39:54 - Personal Dashboard - INFO - Nexus Dashboard API v2.0 initialized successfully!
+00:39:54 - Personal Dashboard - INFO - ======================================================================
+00:39:54 - watchfiles.main - INFO - 5 changes detected
+00:40:00 - watchfiles.main - INFO - 4 changes detected
+00:40:06 - watchfiles.main - INFO - 5 changes detected
+00:40:06 - Personal Dashboard - INFO - Logging system initialized from config
+00:40:07 - watchfiles.main - INFO - 1 change detected
+00:40:07 - Personal Dashboard - INFO - Logging system initialized from config
+00:40:07 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:40:07 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:40:07 - watchfiles.main - INFO - 1 change detected
+00:40:08 - Personal Dashboard - INFO - Registered: Authentication Routes
+00:40:08 - Personal Dashboard - INFO - Registered: Complaint Routes
+00:40:08 - Personal Dashboard - INFO - Registered: Student Routes
+00:40:08 - Personal Dashboard - INFO - Registered: Admin Routes
+00:40:08 - Personal Dashboard - INFO - ======================================================================
+00:40:08 - Personal Dashboard - INFO - Nexus Dashboard API v2.0 initialized successfully!
+00:40:08 - Personal Dashboard - INFO - ======================================================================
+00:40:08 - watchfiles.main - INFO - 5 changes detected
+00:40:09 - watchfiles.main - INFO - 1 change detected
+00:40:38 - watchfiles.main - INFO - 4 changes detected
+00:40:48 - watchfiles.main - INFO - 1 change detected
+00:40:48 - Personal Dashboard - INFO - Logging system initialized from config
+00:40:48 - Personal Dashboard - WARNING - Optional environment variable 'SENTRY_DSN' is not set, using default: None
+00:40:48 - Personal Dashboard - INFO - Sentry monitoring initialized
+00:40:49 - watchfiles.main - INFO - 1 change detected
+00:40:49 - Personal Dashboard - INFO - Registered: Authentication Routes
+00:40:49 - Personal Dashboard - INFO - Registered: Complaint Routes
+00:40:49 - Personal Dashboard - INFO - Registered: Student Routes
+00:40:49 - Personal Dashboard - INFO - Registered: Admin Routes
+00:40:49 - Personal Dashboard - INFO - ======================================================================
+00:40:49 - Personal Dashboard - INFO - Nexus Dashboard API v2.0 initialized successfully!
+00:40:49 - Personal Dashboard - INFO - ======================================================================
+00:40:49 - watchfiles.main - INFO - 5 changes detected
+00:41:05 - watchfiles.main - INFO - 1 change detected
+00:41:20 - watchfiles.main - INFO - 1 change detected
+00:41:38 - Personal Dashboard - INFO - Login attempt for user: string
+00:41:38 - Personal Dashboard - INFO - User login successful: string
+00:41:38 - watchfiles.main - INFO - 1 change detected
+00:41:53 - watchfiles.main - INFO - 1 change detected
+00:42:08 - watchfiles.main - INFO - 1 change detected
+00:42:09 - watchfiles.main - INFO - 1 change detected
+00:42:13 - watchfiles.main - INFO - 1 change detected
+00:42:15 - watchfiles.main - INFO - 1 change detected
+00:42:19 - watchfiles.main - INFO - 35 changes detected
+00:42:21 - watchfiles.main - INFO - 1 change detected
+00:42:21 - watchfiles.main - INFO - 1 change detected
+00:42:22 - watchfiles.main - INFO - 1 change detected
+00:42:22 - watchfiles.main - INFO - 1 change detected
+00:42:23 - watchfiles.main - INFO - 4 changes detected
+00:42:23 - watchfiles.main - INFO - 2 changes detected
+00:42:24 - watchfiles.main - INFO - 1 change detected

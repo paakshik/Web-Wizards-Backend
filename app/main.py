@@ -15,13 +15,16 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime, timezone
-
+import os
+from fastapi.staticfiles import StaticFiles
 # Import configuration
 from app.config import logger
 
 # Authentication & User Management
 from app.api.auth import router as auth_router
 from app.api.complaints import router as complaint_router
+from app.api.students import router as student_router
+from app.api.admin import router as admin_router
 # # Google Integrations
 # from app.api.google_services_calender import router as calendar_router
 # from app.api.google_services_gmail import router as gmail_router
@@ -36,6 +39,9 @@ from app.api.complaints import router as complaint_router
 # from app.api.dashboard_system_monitoring import router as sys_monitor_router
 # from app.api.dashboard_system_analytics import router as sys_analytics_router
 # from app.api.dashboard_system_ops import router as sys_ops_router
+
+os.makedirs("user_data/uploads", exist_ok=True)
+os.makedirs("user_data/resolutions", exist_ok=True)
 
 def create_app() -> FastAPI:
     """
@@ -74,6 +80,11 @@ def create_app() -> FastAPI:
     main_app.include_router(complaint_router)
     logger.info("Registered: Complaint Routes")
 
+    main_app.include_router(student_router)
+    logger.info("Registered: Student Routes")
+
+    main_app.include_router(admin_router)
+    logger.info("Registered: Admin Routes")
     # main_app.include_router(projects_router)
     # main_app.include_router(commands_router)
     # logger.info("Registered: Project & Command Routes")
@@ -144,3 +155,5 @@ def create_app() -> FastAPI:
 # CREATE APP INSTANCE
 # ============================================================================
 app = create_app()
+app.mount("/uploads", StaticFiles(directory="user_data/uploads"), name="uploads")
+app.mount("/resolutions", StaticFiles(directory="user_data/resolutions"), name="resolutions")
