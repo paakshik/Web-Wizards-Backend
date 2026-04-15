@@ -4,9 +4,11 @@
     "student_username": "string",
     "title": "string",
     "description": "string",
-    "status": "resolved",
+    "status": "closed",
     "created_at": "2026-04-15",
     "department": "string",
-    "phone_number": "stringstri"
+    "phone_number": "stringstri",
+    "closing_description": "string",
+    "closing_documents": "/uploads/338d20ab-6fff-4f56-b833-4a3129787ffb_avatar.py"
   }
 ]

@@ -1,31 +1,43 @@
-from fastapi import APIRouter, Depends, HTTPException
-from app.api.auth import verify_token  # the function above
-from app.model import ComplaintRequest  # define a Pydantic model
+from fastapi import APIRouter, Depends, HTTPException,Form,File,UploadFile
+from app.api.auth import verify_token
+from app.model import ComplaintRequest
 from app.config import logger, COMPLAINT_FILE,sentry_sdk
 from app.dependencies import read_json_file, write_json_file
 from datetime import date
+from pathlib import Path as FilePath
 import uuid
+import shutil,os
+from typing import Dict
 
 router = APIRouter(prefix="/complaints", tags=["Complaints"])
+RESOLUTION_DIR = FilePath("user_data/resolutions")
+RESOLUTION_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/complaint/raise", status_code=201)
 async def raise_complaint(
     complaint: ComplaintRequest,
-    token_payload: dict = Depends(verify_token)
-):
+    token_payload: dict = Depends(verify_token),
+    document: UploadFile = File(...)) -> Dict[str, str]:
+
     """Only authenticated students can raise a complaint."""
-    # Ensure the logged-in user is a student
     if token_payload.get("role") != "student":
         raise HTTPException(status_code=403, detail="Only students can raise complaints")
 
     username = token_payload.get("sub")
     logger.info(f"Student {username} raising complaint: {complaint.title}")
     unique_id = str(uuid.uuid4())
+
+    file_ext = os.path.splitext(document.filename)[1]
+    file_name = f"{unique_id}_complaint_document{file_ext}"
+    file_path = RESOLUTION_DIR / file_name
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(document.file, buffer)
     complaints = read_json_file(COMPLAINT_FILE)
     new_complaint = {
         "id": unique_id,
         "student_username": username,
         "title": complaint.title,
+        "complaint_document":f"/resolutions/{file_name}",
         "description": complaint.description,
         "status": "open",
         "created_at": str(date.today()),
@@ -50,11 +62,10 @@ async def get_my_complaints(token_payload: dict = Depends(verify_token)):
 async def get_my_complaints(department:str,token_payload: dict = Depends(verify_token)):
     if token_payload.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized")
-    username = token_payload.get("sub")
     all_complaints = read_json_file(COMPLAINT_FILE)
     if department:
         all_complaints = [c for c in all_complaints if c.get("department") == department]
-    return [c for c in all_complaints if c.get("student_username") == username]
+    return [all_complaints]
 
 
 @router.get("/complaint/admin/stats")
@@ -170,5 +181,57 @@ async def update_complaint_status(
     return {
         "message": f"Complaint status successfully updated to '{status_data}'",
         "complaint_id": complaint_id
+    }
+
+
+@router.post("/complaint/{complaint_id}/close")
+async def close_complaint_with_documents(
+        complaint_id: str,
+        closing_description: str = Form(...),
+        token_payload: dict = Depends(verify_token),
+        document: UploadFile = File(...)) -> Dict[str, str]:
+    """
+    Closes a complaint.
+    Requires an admin token, a text description, and at least one document.
+    """
+    if token_payload.get("role") != "admin":
+        logger.warning(f"Unauthorized close attempt by {token_payload.get('sub')}")
+        raise HTTPException(status_code=403, detail="Only admins can close complaints")
+
+    complaints = read_json_file(COMPLAINT_FILE)
+
+    target_complaint = None
+    for complaint in complaints:
+        if complaint.get("id") == complaint_id:
+            target_complaint = complaint
+            break
+
+    if not target_complaint:
+        raise HTTPException(status_code=404, detail="Complaint ID not found")
+
+    if target_complaint.get("status") == "closed":
+        raise HTTPException(status_code=400, detail="Complaint is already closed")
+
+    file_ext = os.path.splitext(document.filename)[1]
+    file_name = f"{target_complaint.get("id")}_closing_documents{file_ext}"
+    file_path = RESOLUTION_DIR / file_name
+    with file_path.open("wb") as buffer:
+        shutil.copyfileobj(document.file, buffer)
+
+
+    # 4. Update the complaint in the JSON data
+    target_complaint["status"] = "closed"
+    target_complaint["closing_description"] = closing_description
+    target_complaint["closing_documents"] = f"/resolutions  /{file_name}"
+
+    # 5. Write the changes back to the JSON file
+    write_json_file(COMPLAINT_FILE, complaints)
+
+    logger.info(f"Admin {token_payload.get('sub')} closed complaint {complaint_id}")
+
+    return {
+        "message": "Complaint successfully closed",
+        "complaint_id": complaint_id,
+        "document_saved": f"/uploads/{file_name}"
     }
 
