@@ -11,3 +11,4 @@ email-validator
 python-multipart
 watchfiles==1.0.5
 cloudinary
+psycopg2-binary==2.9.9
