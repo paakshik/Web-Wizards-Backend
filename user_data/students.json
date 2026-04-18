@@ -1,0 +1,23 @@
+[
+  {
+    "username": "string",
+    "college_email": "string@gmail.com",
+    "sch_id": "string",
+    "password": "$2b$12$/rKefJk0papFPgjH50GvqOTdwE7LbqRBAA200U4Ve/FCtId/0WAIW",
+    "profile_pic": "/uploads/string_avatar.png"
+  },
+  {
+    "username": "string",
+    "college_email": "string1@gmail.com",
+    "sch_id": "string",
+    "password": "$2b$12$5S6SMA2266iX3nEjdkrwRuA31/l4j27ofp8gBkq82M6f.f0xXGKIq",
+    "profile_pic": "/uploads/string_avatar.py"
+  },
+  {
+    "username": "Paakshik",
+    "college_email": "string@gmail.com",
+    "sch_id": "string",
+    "password": "$2b$12$jzzpjtWLsUcoMx0V/7FB7exnFOeLFHa9JVv5HIC5JkjvzK3wTzmu.",
+    "profile_pic": "/uploads/Paakshik_avatar.py"
+  }
+]
