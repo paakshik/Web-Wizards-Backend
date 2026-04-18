@@ -12,7 +12,7 @@ UPLOAD_DIR = FilePath("user_data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 router = APIRouter(prefix="/student", tags=["Student"])
 
-@router.get("/student/me")
+@router.get("/me")
 async def get_student_profile(token_payload: dict = Depends(verify_token)):
     """
     Fetches the profile data of the currently logged-in student based on their JWT token.

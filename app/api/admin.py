@@ -12,7 +12,7 @@ UPLOAD_DIR = FilePath("user_data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
-@router.get("/admin/me")
+@router.get("/me")
 async def get_admin_profile(token_payload: dict = Depends(verify_token)):
     """
     Fetches the profile data of the currently logged-in admin based on their JWT token.

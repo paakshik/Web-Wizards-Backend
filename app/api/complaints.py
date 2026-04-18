@@ -65,7 +65,7 @@ async def get_my_complaints(department:str,token_payload: dict = Depends(verify_
     all_complaints = read_json_file(COMPLAINT_FILE)
     if department:
         all_complaints = [c for c in all_complaints if c.get("department") == department]
-    return [all_complaints]
+    return all_complaints
 
 
 @router.get("/complaint/admin/stats")
@@ -222,7 +222,7 @@ async def close_complaint_with_documents(
     # 4. Update the complaint in the JSON data
     target_complaint["status"] = "closed"
     target_complaint["closing_description"] = closing_description
-    target_complaint["closing_documents"] = f"/resolutions  /{file_name}"
+    target_complaint["closing_documents"] = f"/resolutions/{file_name}"
 
     # 5. Write the changes back to the JSON file
     write_json_file(COMPLAINT_FILE, complaints)

@@ -200,7 +200,7 @@ async def signup_admin(username: str = Form(...),
 # LOGIN ENDPOINTS
 # ============================================================================
 
-@router.post("/login/user")
+@router.post("/login/student")
 async def login_user(student_data: StudentAuthRequest) -> Dict[str, str]:
     """
     Authenticates a student against the student database.
