@@ -1,22 +1,20 @@
 from typing import Dict
 from fastapi import APIRouter, HTTPException,status,Form,UploadFile,File
-from app.model import StudentAuthRequest, AdminAuthRequest
-from pathlib import Path as FilePath
-from app.config import logger, sentry_sdk, STUDENTS_FILE, ADMIN_FILE
-from app.dependencies import read_json_file, write_json_file
+from app.cloudinary_helper import upload_file
+from app.config import logger, sentry_sdk
 import bcrypt
+from sqlmodel import Session, select
+from app.model import Student, Admin, StudentAuthRequest, AdminAuthRequest
 import os,shutil
 import jwt
 from datetime import datetime, timedelta
-from fastapi import Depends, Header
+from fastapi import Depends
 from app.config import SECRET_KEY,ALGORITHM,ACCESS_TOKEN_EXPIRE_MINUTES
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
+from app.database import get_session
 
 security = HTTPBearer()
 
-UPLOAD_DIR = FilePath("user_data/uploads")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 def get_password_hash(password: str) -> str:
@@ -56,11 +54,15 @@ def verify_token(auth: HTTPAuthorizationCredentials = Depends(security)):
 # SIGNUP ENDPOINTS
 # ============================================================================
 @router.post("/signup/student", status_code=status.HTTP_201_CREATED)
-async def signup_student(username: str = Form(...),
+async def signup_student(
+    username: str = Form(...),
     college_email: str = Form(...),
     password: str = Form(...),
     sch_id: str = Form(...),
-    avatar: UploadFile = File(...)) -> Dict[str, str]:
+    avatar: UploadFile = File(...),
+    session: Session = Depends(get_session)
+) -> Dict[str, str]:
+
     """
     Registers a new student account in the system.
 
@@ -69,6 +71,7 @@ async def signup_student(username: str = Form(...),
     If the username exists, a warning is logged to Sentry.
 
     Args:
+        :param session:
         :param sch_id:
         :param avatar:
         :param password:
@@ -86,51 +89,57 @@ async def signup_student(username: str = Form(...),
     logger.info(f"Attempting to register new user: {username}")
 
     try:
-        users = read_json_file(STUDENTS_FILE)
-
-        if any(user.get("username") == username and user.get("sch_id") ==
-               sch_id and user.get("college_email") ==
-               college_email for user in users):
-            msg = f"Signup failed: Username '{username}' already exists."
-            logger.warning(msg)
+        existing = session.exec(
+            select(Student).where(Student.username == username)
+        ).first()
+        if existing:
             raise HTTPException(status_code=400, detail="Username already exists")
 
-        file_ext = os.path.splitext(avatar.filename)[1]
-        file_name = f"{username}_avatar{file_ext}"
-        file_path = UPLOAD_DIR / file_name
+        existing_email = session.exec(
+            select(Student).where(Student.college_email == college_email)
+        ).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
 
+        avatar_url = await upload_file(
+            file=avatar,
+            folder="campusresolve/avatars/students",
+            public_id=f"{username}_avatar"
+        )
 
-        with file_path.open("wb") as buffer:
-            shutil.copyfileobj(avatar.file, buffer)
 
         hashed_pwd = get_password_hash(password)
-        new_user = {
-            "username": username,
-            "college_email": college_email,
-            "sch_id": sch_id,
-            "password": hashed_pwd,
-            "profile_pic": f"/uploads/{file_name}"
-        }
-        users.append(new_user)
-        write_json_file(STUDENTS_FILE, users)
+        new_student = Student(
+            username=username,
+            college_email=college_email,
+            sch_id=sch_id,
+            password=hashed_pwd,
+            profile_pic=avatar_url
+        )
+        session.add(new_student)
+        session.commit()
 
-        logger.info(f"Successfully registered new user: {username}")
-        return {"message": "User created successfully",
-                "username": username}
+        logger.info(f"Successfully registered new student: {username}")
+        return {"message": "Student created successfully", "username": username}
+
     except HTTPException:
         raise
     except Exception as e:
+        session.rollback()
         logger.error(f"Critical error during student signup: {str(e)}", exc_info=True)
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/signup/admin", status_code=status.HTTP_201_CREATED)
-async def signup_admin(username: str = Form(...),
+async def signup_admin(
+    username: str = Form(...),
     email: str = Form(...),
     password: str = Form(...),
     id: str = Form(...),
     department: str = Form(...),
-    avatar: UploadFile = File(...)) -> Dict[str, str]:
+    avatar: UploadFile = File(...),
+    session: Session = Depends(get_session)
+) -> Dict[str, str]:
     """
     Registers a new admin account in the system.
 
@@ -139,6 +148,7 @@ async def signup_admin(username: str = Form(...),
     If the admin exists, a warning is logged to logger.
 
     Args:
+        :param session:
         :param email:
         :param id:
         :param department:
@@ -157,41 +167,43 @@ async def signup_admin(username: str = Form(...),
     logger.info(f"Attempting to register new user: {username}")
 
     try:
-        users = read_json_file(ADMIN_FILE)
-
-        if any(user.get("username") == username and user.get("id") ==
-               id and user.get("email") ==
-               email for user in users):
-            msg = f"Signup failed: Username '{username}' already exists."
-            logger.warning(msg)
+        existing = session.exec(
+            select(Admin).where(Admin.username == username)
+        ).first()
+        if existing:
             raise HTTPException(status_code=400, detail="Username already exists")
 
-        file_ext = os.path.splitext(avatar.filename)[1]
-        file_name = f"{username}_avatar{file_ext}"
-        file_path = UPLOAD_DIR / file_name
+        existing_email = session.exec(
+            select(Admin).where(Admin.email == email)
+        ).first()
+        if existing_email:
+            raise HTTPException(status_code=400, detail="Email already registered")
 
-
-        with file_path.open("wb") as buffer:
-            shutil.copyfileobj(avatar.file, buffer)
-
+        avatar_url = await upload_file(
+            file=avatar,
+            folder="campusresolve/avatars/admins",
+            public_id=f"{username}_avatar"
+        )
         hashed_pwd = get_password_hash(password)
-        new_user = {
-            "username": username,
-            "email": email,
-            "id": id,
-            "password": hashed_pwd,
-            "profile_pic": f"/uploads/{file_name}",
-            "department": department,
-        }
-        users.append(new_user)
-        write_json_file(ADMIN_FILE, users)
+        new_admin = Admin(
+            username=username,
+            email=email,
+            admin_id=id,
+            password=hashed_pwd,
+            profile_pic=avatar_url,
+            department=department
+        )
+
+        session.add(new_admin)
+        session.commit()
 
         logger.info(f"Successfully registered new admin: {username}")
-        return {"message": "User created successfully",
-                "username": username}
+        return {"message": "Admin created successfully", "username": username}
+
     except HTTPException:
         raise
     except Exception as e:
+        session.rollback()
         logger.error(f"Critical error during admin signup: {str(e)}", exc_info=True)
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -201,7 +213,8 @@ async def signup_admin(username: str = Form(...),
 # ============================================================================
 
 @router.post("/login/student")
-async def login_user(student_data: StudentAuthRequest) -> Dict[str, str]:
+async def login_user(student_data: StudentAuthRequest,
+                     session: Session = Depends(get_session)) -> Dict[str, str]:
     """
     Authenticates a student against the student database.
 
@@ -221,30 +234,31 @@ async def login_user(student_data: StudentAuthRequest) -> Dict[str, str]:
         HTTPException:
             - 401 (Unauthorized): If credentials do not match any record.
             - 500 (Internal Server Error): If the database is unreachable.
+            :param student_data:
+            :param session:
     """
     logger.info(f"Login attempt for user: {student_data.username}")
 
     try:
-        users = read_json_file(STUDENTS_FILE)
+        student = session.exec(
+            select(Student).where(Student.username == student_data.username)
+        ).first()
 
-        for user in users:
-            if user.get("username") == student_data.username and verify_password(student_data.password, user.get("password")) and user.get("college_email") == student_data.college_email:
-                logger.info(f"User login successful: {student_data.username}")
-                token = create_access_token(
-                    data={"sub": student_data.username, "role": "student"})
-                return {
-                    "message": "User login successful",
-                    "role": "student",
-                    "token": token,
-                }
+        if not student or not verify_password(student_data.password, student.password):
+            msg = f"Failed login attempt for student: {student_data.username}"
+            logger.warning(msg)
+            sentry_sdk.capture_message(msg, level="warning")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Invalid credentials")
 
-        msg = f"Failed login attempt for user: {student_data.username} (Invalid credentials)"
-        logger.warning(msg)
-        sentry_sdk.capture_message(msg, level="warning")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password"
-        )
+        if student.college_email != student_data.college_email:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Invalid email")
+
+        token = create_access_token(data={"sub": student.username, "role": "student"})
+        logger.info(f"Student login successful: {student_data.username}")
+        return {"message": "Login successful", "role": "student", "token": token}
+
     except HTTPException:
         raise
     except Exception as e:
@@ -253,7 +267,10 @@ async def login_user(student_data: StudentAuthRequest) -> Dict[str, str]:
 
 
 @router.post("/login/admin")
-async def login_admin(admin_data: AdminAuthRequest) -> Dict[str, str]:
+async def login_admin(
+    admin_data: AdminAuthRequest,
+    session: Session = Depends(get_session)
+) -> Dict[str, str]:
     """
     Authenticates an administrator against the admin database.
 
@@ -277,27 +294,25 @@ async def login_admin(admin_data: AdminAuthRequest) -> Dict[str, str]:
     logger.info(f"Admin login attempt for username: {admin_data.username}")
 
     try:
-        admins = read_json_file(ADMIN_FILE)
+        admin = session.exec(
+            select(Admin).where(Admin.username == admin_data.username)
+        ).first()
 
-        for admin in admins:
-            if admin.get("email") == admin_data.college_email and verify_password(admin_data.password, admin.get("password")):
-                logger.info(f"Admin login successful: {admin_data.username}")
-                token = create_access_token(
-                    data={"sub": admin_data.username, "role": "admin"})
-                return {
-                    "message": "Admin login successful",
-                    "role": "admin",
-                    "token": token
-                }
+        if not admin or not verify_password(admin_data.password, admin.password):
+            msg = f"Failed admin login attempt: {admin_data.username}"
+            logger.warning(msg)
+            sentry_sdk.capture_message(msg, level="warning")
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Invalid username or password")
 
-        msg = f"Failed admin login attempt: {admin_data.username} (Invalid credentials)"
-        logger.warning(msg)
-        sentry_sdk.capture_message(msg, level="warning")
+        if admin.email != admin_data.college_email:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail="Invalid username or password")
 
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid username or password"
-        )
+        token = create_access_token(data={"sub": admin.username, "role": "admin"})
+        logger.info(f"Admin login successful: {admin_data.username}")
+        return {"message": "Admin login successful", "role": "admin", "token": token}
+
     except HTTPException:
         raise
     except Exception as e:

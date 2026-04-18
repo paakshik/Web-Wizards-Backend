@@ -10,7 +10,7 @@ Responsibilities:
 4. Register WebSocket handlers
 5. Provide health check endpoints
 """
-
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -19,7 +19,7 @@ import os
 from fastapi.staticfiles import StaticFiles
 # Import configuration
 from app.config import logger
-
+from app.database import create_db_and_tables
 # Authentication & User Management
 from app.api.auth import router as auth_router
 from app.api.complaints import router as complaint_router
@@ -40,8 +40,13 @@ from app.api.admin import router as admin_router
 # from app.api.dashboard_system_analytics import router as sys_analytics_router
 # from app.api.dashboard_system_ops import router as sys_ops_router
 
-os.makedirs("user_data/uploads", exist_ok=True)
-os.makedirs("user_data/resolutions", exist_ok=True)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    logger.info("Database tables created/verified")
+    yield
+    logger.info("Application shutting down")
 
 def create_app() -> FastAPI:
     """
@@ -52,7 +57,8 @@ def create_app() -> FastAPI:
         description="Backend API endpoints for project of Web Wizards",
         version="2.0.0",
         docs_url="/docs",
-        redoc_url="/redoc"
+        redoc_url="/redoc",
+        lifespan=lifespan
     )
 
     # ========================================================================
@@ -67,6 +73,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
 
     # ========================================================================
     # ROUTER REGISTRATION
@@ -107,7 +114,7 @@ def create_app() -> FastAPI:
     # HEALTH CHECKS (Startup Event Removed)
     # ========================================================================
 
-    @main_app.get("/health", tags=["System"])
+    @main_app.get("/health-status", tags=["System"])
     async def health_check():
         """Simple heartbeat endpoint for uptime monitoring."""
         return {

@@ -114,19 +114,14 @@ def optional_env(key: str, default=None):
     return value
 
 
-APP_DIR = FilePath(__file__).parent.resolve()
-BACKEND_DIR = APP_DIR.parent
-DATA_DIR = FilePath(os.getenv("DATA_DIR","user_data"))
-DATA_DIR.mkdir(exist_ok=True, parents=True)
 SECRET_KEY = require_env("SECRET_KEY")
 ALGORITHM = require_env("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(optional_env("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 AUTHLIB_INSECURE_TRANSPORT = optional_env("AUTHLIB_INSECURE_TRANSPORT", "0")
-
-STUDENTS_FILE = DATA_DIR / "students.json"
-ADMIN_FILE = DATA_DIR / "admin.json"
-COMPLAINT_FILE = DATA_DIR / "complaint.json"
-
+DATABASE_URL = require_env("DATABASE_URL")
+CLOUDINARY_CLOUD_NAME = require_env("CLOUDINARY_CLOUD_NAME")
+CLOUDINARY_API_KEY = require_env("CLOUDINARY_API_KEY")
+CLOUDINARY_API_SECRET = require_env("CLOUDINARY_API_SECRET")
 SENTRY_DSN = optional_env("SENTRY_DSN")
 if SENTRY_DSN:
     sentry_sdk.init(

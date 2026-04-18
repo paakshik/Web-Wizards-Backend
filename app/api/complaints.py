@@ -1,103 +1,114 @@
 from fastapi import APIRouter, Depends, HTTPException,Form,File,UploadFile
-from app.api.auth import verify_token
-from app.model import ComplaintRequest
-from app.config import logger, COMPLAINT_FILE,sentry_sdk
-from app.dependencies import read_json_file, write_json_file
+from app.config import logger,sentry_sdk
 from datetime import date
-from pathlib import Path as FilePath
+from app.cloudinary_helper import upload_file
 import uuid
-import shutil,os
 from typing import Dict
-
+from sqlmodel import Session, select
+from app.api.auth import verify_token
+from app.model import Complaint, ComplaintRequest
+from app.database import get_session
+from  typing import Optional
 router = APIRouter(prefix="/complaints", tags=["Complaints"])
-RESOLUTION_DIR = FilePath("user_data/resolutions")
-RESOLUTION_DIR.mkdir(parents=True, exist_ok=True)
+
 
 @router.post("/complaint/raise", status_code=201)
 async def raise_complaint(
-    complaint: ComplaintRequest,
-    token_payload: dict = Depends(verify_token),
-    document: UploadFile = File(...)) -> Dict[str, str]:
+        title: str = Form(...),
+        description: str = Form(...),
+        department: str = Form(...),
+        phone_number: str = Form(...),
+        document: UploadFile = File(...),
+        token_payload: dict = Depends(verify_token),
+        session: Session = Depends(get_session)
+) -> Dict[str, str]:
 
     """Only authenticated students can raise a complaint."""
     if token_payload.get("role") != "student":
         raise HTTPException(status_code=403, detail="Only students can raise complaints")
 
     username = token_payload.get("sub")
-    logger.info(f"Student {username} raising complaint: {complaint.title}")
+    logger.info(f"Student {username} raising complaint: {title}")
     unique_id = str(uuid.uuid4())
 
-    file_ext = os.path.splitext(document.filename)[1]
-    file_name = f"{unique_id}_complaint_document{file_ext}"
-    file_path = RESOLUTION_DIR / file_name
-    with file_path.open("wb") as buffer:
-        shutil.copyfileobj(document.file, buffer)
-    complaints = read_json_file(COMPLAINT_FILE)
-    new_complaint = {
-        "id": unique_id,
-        "student_username": username,
-        "title": complaint.title,
-        "complaint_document":f"/resolutions/{file_name}",
-        "description": complaint.description,
-        "status": "open",
-        "created_at": str(date.today()),
-        "department": complaint.department,
-        "phone_number": complaint.phone_number,
-    }
-    complaints.append(new_complaint)
-    write_json_file(COMPLAINT_FILE, complaints)
+    doc_url = await upload_file(
+        file=document,
+        folder="campusresolve/complaints",
+        public_id=f"{unique_id}_document"
+    )
 
-    return {"message": "Complaint raised successfully", "complaint_id": new_complaint["id"]}
+    new_complaint = Complaint(
+        id=unique_id,
+        student_username=username,
+        title=title,
+        description=description,
+        complaint_document=doc_url,  # permanent Cloudinary URL
+        status="open",
+        created_at=str(date.today()),
+        department=department,
+        phone_number=phone_number,
+    )
+    session.add(new_complaint)
+    session.commit()
+
+    return {"message": "Complaint raised successfully", "complaint_id": unique_id}
 
 
 @router.get("/student/my-complaints")
-async def get_my_complaints(token_payload: dict = Depends(verify_token)):
+async def get_student_complaints(
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session)
+):
     if token_payload.get("role") != "student":
         raise HTTPException(status_code=403, detail="Unauthorized")
     username = token_payload.get("sub")
-    all_complaints = read_json_file(COMPLAINT_FILE)
-    return [c for c in all_complaints if c.get("student_username") == username]
+    complaints = session.exec(
+        select(Complaint).where(Complaint.student_username == username)
+    ).all()
+    return complaints
 
 @router.get("/admin/my-complaints")
-async def get_my_complaints(department:str,token_payload: dict = Depends(verify_token)):
+async def get_admin_complaints(
+    department: Optional[str] = None,
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session)
+):
     if token_payload.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized")
-    all_complaints = read_json_file(COMPLAINT_FILE)
+    query = select(Complaint)
     if department:
-        all_complaints = [c for c in all_complaints if c.get("department") == department]
-    return all_complaints
+        query = query.where(Complaint.department == department)
+
+    return session.exec(query).all()
 
 
 @router.get("/complaint/admin/stats")
-async def get_complaint_stats(
-    department:str,
-    token_payload: dict = Depends(verify_token)
+async def get_admin_complaints(
+    department: Optional[str] = None,
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session)
 ):
     """
     Returns counts of complaints at each stage.
     Filterable by department using a query parameter.
     """
-    # Only Admins should see the full dashboard stats
     if token_payload.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     try:
-        complaints = read_json_file(COMPLAINT_FILE)
-
+        query = select(Complaint)
         if department:
-            complaints = [c for c in complaints if c.get("department") == department]
+            query = query.where(Complaint.department == department)
+        complaints = session.exec(query).all()
 
-
-        stats = {
+        return {
             "total": len(complaints),
-            "open": len([c for c in complaints if c["status"] == "open"]),
-            "in_progress": len([c for c in complaints if c["status"] == "in_progress"]),
-            "resolved": len([c for c in complaints if c["status"] == "resolved"]),
-            "closed": len([c for c in complaints if c["status"] == "closed"]),
+            "open": len([c for c in complaints if c.status == "open"]),
+            "in_progress": len([c for c in complaints if c.status == "in_progress"]),
+            "resolved": len([c for c in complaints if c.status == "resolved"]),
+            "closed": len([c for c in complaints if c.status == "closed"]),
             "filtered_by_department": department or "All"
         }
-
-        return stats
 
     except Exception as e:
         sentry_sdk.capture_exception(e)
@@ -105,8 +116,9 @@ async def get_complaint_stats(
 
 
 @router.get("/complaint/student/stats")
-async def get_complaint_stats(
-    token_payload: dict = Depends(verify_token)
+async def get_student_stats(
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session)
 ):
     """
     Returns counts of complaints at each stage.
@@ -116,20 +128,18 @@ async def get_complaint_stats(
         raise HTTPException(status_code=403, detail="Unauthorized")
 
     try:
-        complaints = read_json_file(COMPLAINT_FILE)
+        username = token_payload.get("sub")
+        complaints = session.exec(
+            select(Complaint).where(Complaint.student_username == username)
+        ).all()
 
-
-        stats = {
+        return {
             "total": len(complaints),
-            "open": len([c for c in complaints if c["status"] == "open"]),
-            "in_progress": len([c for c in complaints if c["status"] == "in_progress"]),
-            "resolved": len([c for c in complaints if c["status"] == "resolved"]),
-            "closed": len([c for c in complaints if c["status"] == "closed"]),
-            "filtered_by_department": "All"
+            "open": len([c for c in complaints if c.status == "open"]),
+            "in_progress": len([c for c in complaints if c.status == "in_progress"]),
+            "resolved": len([c for c in complaints if c.status == "resolved"]),
+            "closed": len([c for c in complaints if c.status == "closed"]),
         }
-
-        return stats
-
     except Exception as e:
         sentry_sdk.capture_exception(e)
         raise HTTPException(status_code=500, detail="Error calculating statistics")
@@ -137,9 +147,10 @@ async def get_complaint_stats(
 
 @router.patch("/complaint/{complaint_id}/status")
 async def update_complaint_status(
-        complaint_id: str,
-        status_data: str,
-        token_payload: dict = Depends(verify_token)
+    complaint_id: str,
+    status_data: str,
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session)
 ):
     """
     Updates the status of a specific complaint.
@@ -158,22 +169,12 @@ async def update_complaint_status(
             detail=f"Invalid status. Allowed values are: {valid_statuses}"
         )
 
-    # 3. Read the database
-    complaints = read_json_file(COMPLAINT_FILE)
+    complaint = session.get(Complaint, complaint_id)
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
 
-    # 4. Find the complaint and update it
-    complaint_found = False
-    for complaint in complaints:
-        if complaint.get("id") == complaint_id:
-            complaint["status"] = status_data
-            complaint_found = True
-            break
-
-    if not complaint_found:
-        raise HTTPException(status_code=404, detail="Complaint ID not found")
-
-    # 6. Save the updated list back to the JSON file
-    write_json_file(COMPLAINT_FILE, complaints)
+    complaint.status = status_data
+    session.commit()
 
     logger.info(
         f"Admin {token_payload.get('sub')} updated complaint {complaint_id} to '{status_data}'")
@@ -185,11 +186,13 @@ async def update_complaint_status(
 
 
 @router.post("/complaint/{complaint_id}/close")
-async def close_complaint_with_documents(
-        complaint_id: str,
-        closing_description: str = Form(...),
-        token_payload: dict = Depends(verify_token),
-        document: UploadFile = File(...)) -> Dict[str, str]:
+async def close_complaint(
+    complaint_id: str,
+    closing_description: str = Form(...),
+    document: UploadFile = File(...),
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session)
+) -> Dict[str, str]:
     """
     Closes a complaint.
     Requires an admin token, a text description, and at least one document.
@@ -198,40 +201,30 @@ async def close_complaint_with_documents(
         logger.warning(f"Unauthorized close attempt by {token_payload.get('sub')}")
         raise HTTPException(status_code=403, detail="Only admins can close complaints")
 
-    complaints = read_json_file(COMPLAINT_FILE)
+    complaint = session.get(Complaint, complaint_id)
 
-    target_complaint = None
-    for complaint in complaints:
-        if complaint.get("id") == complaint_id:
-            target_complaint = complaint
-            break
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
 
-    if not target_complaint:
-        raise HTTPException(status_code=404, detail="Complaint ID not found")
-
-    if target_complaint.get("status") == "closed":
+    if complaint.status == "closed":
         raise HTTPException(status_code=400, detail="Complaint is already closed")
 
-    file_ext = os.path.splitext(document.filename)[1]
-    file_name = f"{target_complaint.get("id")}_closing_documents{file_ext}"
-    file_path = RESOLUTION_DIR / file_name
-    with file_path.open("wb") as buffer:
-        shutil.copyfileobj(document.file, buffer)
+    doc_url = await upload_file(
+        file=document,
+        folder="campusresolve/resolutions",
+        public_id=f"{complaint_id}_resolution"
+    )
 
-
-    # 4. Update the complaint in the JSON data
-    target_complaint["status"] = "closed"
-    target_complaint["closing_description"] = closing_description
-    target_complaint["closing_documents"] = f"/resolutions/{file_name}"
-
-    # 5. Write the changes back to the JSON file
-    write_json_file(COMPLAINT_FILE, complaints)
+    complaint.status = "closed"
+    complaint.closing_description = closing_description
+    complaint.closing_documents = doc_url  # permanent Cloudinary URL
+    session.commit()
 
     logger.info(f"Admin {token_payload.get('sub')} closed complaint {complaint_id}")
 
     return {
         "message": "Complaint successfully closed",
         "complaint_id": complaint_id,
-        "document_saved": f"/uploads/{file_name}"
+        "document_saved": doc_url
     }
 

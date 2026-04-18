@@ -1,0 +1,47 @@
+# ============================================================
+# docker-compose.yml — Local development only
+# Spins up your FastAPI app + a local PostgreSQL together
+# Usage: docker compose up
+# ============================================================
+services:
+
+  # --- PostgreSQL Database (mirrors Render's DB locally) ---
+  db:
+    image: postgres:15-alpine
+    container_name: complaint_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: complaint_db
+    ports:
+      - "5432:5432"         # Access from your machine at localhost:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # Persists data between restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- FastAPI Backend ---
+  api:
+    build: .
+    container_name: complaint_api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env                # Loads your local .env file
+    environment:
+      # Override DATABASE_URL to point to the local db service above
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/complaint_db
+    volumes:
+      - .:/app              # Live reload: code changes reflect instantly
+      - ./user_data:/app/user_data
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy   # Wait for DB to be ready before starting API
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app
+
+volumes:
+  postgres_data:

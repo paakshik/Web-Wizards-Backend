@@ -1,19 +1,20 @@
 from fastapi import APIRouter, HTTPException
-from pathlib import Path as FilePath
-from app.config import  STUDENTS_FILE
-from app.dependencies import read_json_file
 from fastapi import Depends
 from fastapi.security import HTTPBearer
 from app.api.auth import verify_token
+from sqlmodel import Session, select
+from app.model import Student
+from app.database import get_session
 
 security = HTTPBearer()
 
-UPLOAD_DIR = FilePath("user_data/uploads")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 router = APIRouter(prefix="/student", tags=["Student"])
 
 @router.get("/me")
-async def get_student_profile(token_payload: dict = Depends(verify_token)):
+async def get_student_profile(
+    token_payload: dict = Depends(verify_token),
+    session: Session = Depends(get_session)
+):
     """
     Fetches the profile data of the currently logged-in student based on their JWT token.
     """
@@ -26,15 +27,16 @@ async def get_student_profile(token_payload: dict = Depends(verify_token)):
     username = token_payload.get("sub")
 
     # 3. Read the students database
-    users = read_json_file(STUDENTS_FILE)
+    student = session.exec(
+        select(Student).where(Student.username == username)
+    ).first()
 
-    # 4. Find the specific student
-    for user in users:
-        if user.get("username") == username:
-            user_data = user.copy()
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
 
-            user_data.pop("password", None)
-
-            # Return the safe user data
-            return user_data
-    raise HTTPException(status_code=404, detail="Student not found")
+    return {
+        "username": student.username,
+        "college_email": student.college_email,
+        "sch_id": student.sch_id,
+        "profile_pic": student.profile_pic
+    }
