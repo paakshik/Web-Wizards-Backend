@@ -6,9 +6,14 @@ import uuid
 from typing import Dict
 from sqlmodel import Session, select
 from app.api.auth import verify_token
-from app.model import Complaint, ComplaintRequest
+from app.model import Complaint, ComplaintRequest,Student,Admin
 from app.database import get_session
 from  typing import Optional
+from app.email_helper import (
+    send_complaint_raised_email,
+    send_status_update_email,
+    send_complaint_closed_email
+)
 router = APIRouter(prefix="/complaints", tags=["Complaints"])
 
 
@@ -50,6 +55,19 @@ async def raise_complaint(
     )
     session.add(new_complaint)
     session.commit()
+    dept_admins = session.exec(
+        select(Admin).where(Admin.department == department)
+    ).all()
+
+    for admin in dept_admins:
+        send_complaint_raised_email(
+            admin_email=admin.email,
+            admin_username=admin.username,
+            complaint_title=title,
+            complaint_id=unique_id,
+            department=department,
+            student_username=username,
+        )
 
     return {"message": "Complaint raised successfully", "complaint_id": unique_id}
 
@@ -175,7 +193,18 @@ async def update_complaint_status(
 
     complaint.status = status_data
     session.commit()
+    student = session.exec(
+        select(Student).where(Student.username == complaint.student_username)
+    ).first()
 
+    if student:
+        send_status_update_email(
+            student_email=student.college_email,
+            student_username=student.username,
+            complaint_title=complaint.title,
+            complaint_id=complaint_id,
+            new_status=status_data
+        )
     logger.info(
         f"Admin {token_payload.get('sub')} updated complaint {complaint_id} to '{status_data}'")
 
@@ -219,7 +248,18 @@ async def close_complaint(
     complaint.closing_description = closing_description
     complaint.closing_documents = doc_url  # permanent Cloudinary URL
     session.commit()
+    student = session.exec(
+        select(Student).where(Student.username == complaint.student_username)
+    ).first()
 
+    if student:
+        send_complaint_closed_email(
+            student_email=student.college_email,
+            student_username=student.username,
+            complaint_title=complaint.title,
+            complaint_id=complaint_id,
+            closing_description=closing_description
+        )
     logger.info(f"Admin {token_payload.get('sub')} closed complaint {complaint_id}")
 
     return {
