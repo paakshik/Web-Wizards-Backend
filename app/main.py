@@ -162,5 +162,3 @@ def create_app() -> FastAPI:
 # CREATE APP INSTANCE
 # ============================================================================
 app = create_app()
-app.mount("/uploads", StaticFiles(directory="user_data/uploads"), name="uploads")
-app.mount("/resolutions", StaticFiles(directory="user_data/resolutions"), name="resolutions")

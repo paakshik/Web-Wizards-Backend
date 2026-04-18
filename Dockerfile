@@ -23,8 +23,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # --- Copy application source code ---
 COPY . .
 
-# Create runtime directories (Render's filesystem is ephemeral, but needed for startup)
-RUN mkdir -p user_data/uploads user_data/resolutions logs
+
 
 # Expose the port FastAPI will run on
 EXPOSE 8000
