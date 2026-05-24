@@ -305,7 +305,7 @@ async def login_admin(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail="Invalid username or password")
 
-        if admin.email != admin_data.college_email:
+        if admin.email != admin_data.email:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail="Invalid username or password")
 
