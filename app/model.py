@@ -43,7 +43,7 @@ class StudentAuthRequest(SQLModel):
 
 class AdminAuthRequest(SQLModel):
     username: str
-    college_email: EmailStr
+    email: EmailStr
     password: str
 
 class ComplaintRequest(SQLModel):
